@@ -14,6 +14,7 @@
 #include <linux/if_vlan.h>
 #include <linux/if_ether.h>
 #include <linux/inetdevice.h>
+#include <linux/version.h>
 #include <net/udp_tunnel.h>
 #include <net/ipv6.h>
 
@@ -136,8 +137,12 @@ static int send6(struct wg_device *wg, struct sk_buff *skb,
 			if (cache)
 				dst_cache_reset(cache);
 		}
-		dst = ipv6_stub->ipv6_dst_lookup_flow(sock_net(sock), sock, &fl,
-						      NULL);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 1, 0)
+		// for kernel 7.1+
+		dst = ip6_dst_lookup_flow(sock_net(sock), sock, &fl, NULL);
+#else
+		dst = ipv6_stub->ipv6_dst_lookup_flow(sock_net(sock), sock, &fl, NULL);
+#endif
 		if (IS_ERR(dst)) {
 			ret = PTR_ERR(dst);
 			net_dbg_ratelimited("%s: No route to %pISpfsc, error %d\n",
